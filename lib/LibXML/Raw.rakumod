@@ -952,11 +952,13 @@ class anyNode is export does LibXML::Raw::DOM::Node {
 
     method Blob(anyNode:D: int32 :$options = 0, xmlEncodingStr :$enc --> Blob) {
         my buf8 $buf;
+
         if self.xml6_node_to_buf($options, my size_t $len, $enc) -> $p {
             $buf .= allocate($len);
             CLib::memcpy($buf, $p, $len);
-            CLib::free($p);
+            xml6_gbl::xml-free($p);
         }
+
         $buf;
     }
 
@@ -995,6 +997,8 @@ class anyNode is export does LibXML::Raw::DOM::Node {
     method domSetNamespaceDeclURI(|c) { ... }
     method domGetNamespaceDeclURI(|c) { ... }
     method ItemNode handles<delegate cast> { nativecast(itemNode, self) }
+
+    method new() { fail "new() not available for " ~ self.WHAT.raku }
 }
 
 #| A node in an XML tree.
@@ -1326,13 +1330,17 @@ class xmlEntity is anyNode is export {
     has xmlCharP    $.content; # content or ndata if unparsed */
     has int32        $.length; # the content length */
     has int32         $.etype; # The entity type */
+    
     has xmlCharP $.ExternalID; # External identifier for PUBLIC */
     has xmlCharP   $.SystemID; # URI for a SYSTEM or PUBLIC Entity */
 
     has xmlEntity     $.nexte; # unused */
     has xmlCharP        $.URI; # the full URI as computed */
     has int32         $.owner; # does the entity own the childrens */
-    has int32       $.checked; # was the entity content checked */
+    #
+    # Todo: libxml2 2.10.0+ has made structural changes below this point
+    # Remaining structure is version dependant
+    has int32       $!checked; # was the entity content checked */
                                # this is also used to count entities
                                # references done from that entity
                                # and if it contains '<' */
